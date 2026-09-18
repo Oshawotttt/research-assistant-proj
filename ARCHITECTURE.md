@@ -66,7 +66,8 @@ flowchart LR
 
 | Service | Stack | Owns | Folder |
 |---|---|---|---|
-| User Management | Spring Boot (backend) + React (Vite, frontend) | `users`, `folders`; auth | `frontend/` |
+| User Management | Spring Boot | `users`, `folders`; auth, JWT issuance | `user-management/` |
+| Frontend (owned by the User Management team) | React + Vite | The single React app in front of every service | `frontend/` |
 | Storage Management | Java + Spring Boot | `papers`, `notes`, `background_metadata`, `background_text`, `authors_background`; Postgres + S3/disk | `storage/` |
 | Research Evaluation | Python | Background-info aggregation, citation-neighbourhood metrics, LLM reasoning (claims + stance, week 7) | `backend/` |
 | Updating | Python (shares the `backend/` project with Research Evaluation) | `change_events`; the polling scheduler | `backend/` |
@@ -87,7 +88,8 @@ touch the `users` or `folders` tables directly.
   JWT with the user's id) → every request to Storage Management or
   Research Evaluation carries `Authorization: Bearer <token>`; those
   services validate the signature themselves, no callback per request.
-- **Frontend** (owned by this service): Vite, React Router, Axios with a
+- **Frontend** (owned by this team, but a separate deliverable in `frontend/`,
+  not part of the Spring Boot build): Vite, React Router, Axios with a
   JWT-attaching interceptor, react-hook-form + zod, Tailwind + shadcn/ui,
   React Context for auth state.
 - **Endpoints:** `POST /auth/register`, `POST /auth/login`,

@@ -1,8 +1,8 @@
 # User Management — Section 1
 
-Accounts, research folders, and JWT issuance. This service also owns the app's React frontend.
+Accounts, research folders, and JWT issuance. Spring Boot only — the React app this team also owns lives in [`../frontend/`](../frontend/).
 
-**Other sections depend on this one.** Storage Management's `papers.owner_id` / `folder_id` are bare references into tables owned here, and both Storage Management and Research Evaluation validate the JWT this service issues *without calling back to it*. If you own another section, the part you need is **[§6 The JWT contract](#6-the-jwt-contract--read-this-if-you-own-another-section)**.
+**Other sections depend on this one.** Storage Management's `papers.owner_id` / `folder_id` are bare references into tables owned here, and both Storage Management and Research Evaluation validate the JWT this service issues *without calling back to it*. If you own another section, the part you need is **[§6 The JWT contract](#6-the-jwt-contract)**.
 
 ---
 
@@ -155,7 +155,7 @@ The table is `users`, not `user` — `user` is reserved in Postgres. `gen_random
 
 ## 6. The JWT contract
 
-**[CONTRACTS.md](../../CONTRACTS.md) is the source of truth** for this and
+**[CONTRACTS.md](../CONTRACTS.md) is the source of truth** for this and
 every other cross-service interface. Repeated here only as a pointer:
 
 | Item | Value |
@@ -222,45 +222,14 @@ Likewise `/auth/login` returns the **same generic 401** for an unknown email and
 
 ---
 
-## 8. Frontend
+## 8. Frontend — moved
 
-Lives in `/frontend`. Vite + React 19 + TypeScript, Tailwind v4, shadcn/ui, react-router 7, react-hook-form + Zod, Axios.
+The React app is a **separate deliverable in [`../frontend/`](../frontend/)**,
+with its own README, build tooling and Dockerfile. This team owns it, but it is
+not part of the Spring Boot build and nothing here depends on it.
 
-### Ownership — unsettled, needs a team decision
-
-The brief says this service owns *"the app's frontend"*, and the architecture diagram has the React app talking to **both** User Management and Storage Management. So there is **one React codebase for all five services**, not a per-service UI.
-
-What it doesn't say is who writes the screens for the other four sections:
-
-| Reading | Consequence |
-|---|---|
-| Section 1 writes every screen | This team builds UI for papers, background-info, change events and discovery — learning four other people's APIs to do it |
-| Section 1 owns the **shell**, each section adds its own screens | This team builds routing, auth, layout, per-service API clients and the shadcn design system; others PR their features in |
-
-**Recommendation: the second.** The person who knows an API is the right person to build its screens, and it stops this team becoming the bottleneck for four others' UI. Raise it at the next team sync — it also affects how Jira tickets get assigned.
-
-### Scope for now: login page only
-
-Deliberately minimal. Everything else waits.
-
-- `/login` — email + password, posts to `/auth/login`, stores the token, redirects.
-- Axios instance with a **request** interceptor attaching the bearer token, and a **response** interceptor that clears it and redirects to `/login` on 401, so an expired token never renders a broken page.
-- `AuthContext` holding `{ token, user, login, logout }`, rehydrating from `localStorage` on mount.
-
-**Deferred:** register page, folder list, folder detail, protected-route wrapper for anything beyond login, and every other section's screens.
-
-### Build it *after* the backend
-
-A login page with no `/auth/login` to call can't be run or tested — you'd be writing a form that posts into the void. Build §7's auth endpoints first, then the page against a working API. The backend needs no Node at all.
-
-### Notes for whoever builds it
-
-- Base URL from `VITE_API_BASE_URL` — keep it a variable, not a literal. A second client points at Storage Management in week 7.
-- Decode the token client-side for **display only** — never branch authorization on it; the server re-verifies every request.
-- **Tailwind v4 is not the v3 setup**: `@tailwindcss/vite` plugin + `@import "tailwindcss";`. There is no `npx tailwindcss init -p` and no `tailwind.config.js`.
-- **Zod 4**: use `z.email()`, not the deprecated `z.string().email()`.
-
----
+Scope there for now is the **login page only**. See
+[`../frontend/README.md`](../frontend/README.md).
 
 ## 9. Verification
 

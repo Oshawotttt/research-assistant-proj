@@ -69,12 +69,14 @@ settled and anyone (including the TA) can see the reasoning. Newest first.
 
 ### Open — needs a team answer
 
-- **Folder layout mismatch.** ARCHITECTURE.md, README.md and this log all
-  assign User Management to `frontend/`, but the code currently sits at
-  `services/user-management/`. `frontend/` is also a confusing home for a
-  Spring Boot backend when the same folder must hold the React app. Either
-  move the code or rename the convention, but the three docs and the repo
-  should agree.
+- ~~**Folder layout mismatch.**~~ **Resolved 2026-09-18.** Backend and
+  frontend are now separate top-level folders: `user-management/` holds the
+  Spring Boot service, `frontend/` holds the React app. The earlier plan to
+  put the whole service in `frontend/` was dropped - a Spring Boot API in a
+  path called `frontend/` misleads every new reader, and the two halves have
+  different build tools, different CI steps and different Dockerfiles. The
+  backend could not go in `backend/` either: that is the Python project for
+  Research Evaluation and Updating. ARCHITECTURE.md and README.md updated.
 - **Who builds the other sections' screens.** One React app serves all five
   services. Section 1 owning the shell (routing, auth context, API clients,
   design system) with each section adding its own screens is the proposal;

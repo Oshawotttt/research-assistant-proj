@@ -22,7 +22,8 @@ REST, trusting a single JWT issued at login. See
 
 | Service | Stack | Folder |
 |---|---|---|
-| User Management (+ frontend) | Spring Boot + React | `frontend/` |
+| User Management | Spring Boot | `user-management/` |
+| Frontend (User Management team) | React + Vite | `frontend/` |
 | Storage Management | Java + Spring Boot | `storage/` |
 | Research Evaluation | Python | `backend/` |
 | Updating | Python | `backend/` |
