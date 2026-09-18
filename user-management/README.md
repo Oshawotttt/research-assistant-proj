@@ -22,7 +22,7 @@ Branch: `feat/user-management`.
 
 ### Prerequisites
 
-Only **JDK 21+** is required for the backend. Everything else is deliberately avoided:
+Only **JDK 25+** is required for the backend. Everything else is deliberately avoided:
 
 | Not needed | Why |
 |---|---|
@@ -108,7 +108,15 @@ A direct risk to the week 7 demo. Set this up, don't touch it for a week, and it
 
 **No Lombok.** It patches `javac` internals and historically breaks on brand-new JDKs; JDK 26 is two months old and its Lombok support is unverified. With two entities the cost is near zero — hand-written accessors, and every DTO is a `record`.
 
-**Java 21, not 26.** `<java.version>21</java.version>` compiles fine under a JDK 26 toolchain via `--release`, and matches the `eclipse-temurin:21-jre` image Section 5 will deploy on, so local and container agree.
+**Java 25.** `<java.version>25</java.version>` targets the current LTS
+release. The code needs nothing newer than Java 17, so this is a
+support-horizon choice rather than a capability one.
+
+⚠️ **Deployment:** this service needs a **Java 25+ JRE base image**
+(`eclipse-temurin:25-jre`). Bytecode compiled for 25 will not run on an
+older JRE, and it fails *only inside the container* - never on a dev
+machine with a newer JDK. Other services are unaffected: each is a
+separate project and they talk over HTTP/JSON, not shared code.
 
 ---
 
@@ -248,6 +256,7 @@ Scope there for now is the **login page only**. See
 
 | Trap | Correct move |
 |---|---|
+| `eclipse-temurin:21-jre` in the Dockerfile | This service is compiled for **25** — use a 25+ JRE or the container will not start |
 | `JWT_SECRET` used as raw text | It is **base64** — decode it first, or Python services reject every token |
 | Property named `app.jwt.secret` | CONTRACTS.md says `JWT_SECRET`, so the property is `jwt.secret` |
 | Supabase **direct** connection string | IPv6-only on free; times out on IPv4 wifi. Use the session pooler, port 5432, user `postgres.<ref>` |

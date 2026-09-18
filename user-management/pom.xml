@@ -15,9 +15,13 @@
 	<description>User Management service - accounts, folders, JWT issuance</description>
 
 	<properties>
-		<!-- 21, not the locally installed 26: matches the eclipse-temurin:21-jre
-		     image Section 5 deploys on, so local and container agree. -->
-		<java.version>21</java.version>
+		<!-- Java 25 is the current LTS release.
+		     DEPLOYMENT: this service needs a Java 25+ JRE base image
+		     (eclipse-temurin:25-jre). Bytecode compiled for 25 will NOT run
+		     on an older JRE, and it fails only inside the container - never
+		     on a dev machine with a newer JDK. Other services are unaffected:
+		     they are separate projects and may target any version. -->
+		<java.version>25</java.version>
 		<!-- MUST be the 3.x line. springdoc 2.x targets Spring Boot 3 and will
 		     not start under Boot 4. -->
 		<springdoc.version>3.1.1</springdoc.version>

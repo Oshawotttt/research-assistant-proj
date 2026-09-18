@@ -54,9 +54,21 @@ settled and anyone (including the TA) can see the reasoning. Newest first.
   brand-new JDKs; the dev machine runs JDK 26, GA in July 2026, whose
   Lombok support is unverified. With two entities the cost of hand-written
   accessors is near zero, and every DTO is a `record`.
-- **`<java.version>21</java.version>`**, not 26. Compiles fine under a
-  JDK 26 toolchain via `--release`, and matches the `eclipse-temurin:21-jre`
-  image Deployment will use, so local and container agree.
+- **`<java.version>25</java.version>`**, the current LTS release. Compiles
+  under the locally installed JDK 26 toolchain via `--release`. The code
+  itself needs nothing newer than Java 17 - this is a support-horizon
+  choice, not a capability one.
+
+  **Deployment constraint:** the Docker image for this service must use a
+  Java 25+ JRE (`eclipse-temurin:25-jre`). Bytecode compiled for 25 will
+  not run on an older JRE, and it fails only inside the container - never
+  on a dev machine with a newer JDK installed, which is how this kind of
+  bug survives until deployment week.
+
+  **Other services are unaffected.** Each service is a separate project
+  with its own build file, and services talk over HTTP/JSON rather than by
+  sharing code - two of them are Python. Storage Management may target any
+  Java version it likes.
 - **Token lives in `localStorage`** on the frontend, not an httpOnly
   cookie. A cookie set by User Management would not be sent to Storage
   Management on a different origin without a shared parent domain, which
