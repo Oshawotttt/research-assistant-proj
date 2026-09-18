@@ -12,15 +12,13 @@ Backend for this service: [`../user-management/`](../user-management/).
 **Deferred until the backends are settled** (DECISIONS.md, 2026-09-18).
 Nothing here is started, and nothing else is blocked on it.
 
+When work does start, the first prerequisite is Node, which is not installed:
 
 ```powershell
 winget install -e --id OpenJS.NodeJS.LTS
 ```
 
-Nothing else is blocked on this — the entire backend is built and tested
-without it.
-
-## Scope for now: the login page only
+## Scope when it resumes: the login page only
 
 Deliberately minimal. Everything else waits.
 
