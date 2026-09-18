@@ -65,16 +65,72 @@ npx shadcn@latest init
 [CONTRACTS.md](../CONTRACTS.md) — treat that as the source of truth, not this
 file.
 
-## ⚠️ Open question: who builds the other sections' screens
 
-One React app serves all five services, and the brief says Section 1 owns "the
-app's frontend" — but not who writes screens for the other four.
+## Ownership: Section 1 builds the shell, each section builds its own screens
 
-| Reading | Consequence |
+Settled 2026-09-18 — see [DECISIONS.md](../DECISIONS.md).
+
+**Section 1 provides the shell** — the parts every screen sits inside:
+
+| Shell (Section 1 writes and maintains) | What it does |
 |---|---|
-| Section 1 writes every screen | This team builds UI for papers, background-info, change events and discovery, learning four other people's APIs |
-| Section 1 owns the **shell**, each section adds its own screens | This team builds routing, auth, layout, API clients and the design system; others PR their features in |
+| `src/router.tsx` | Which URL shows which screen |
+| `src/auth/AuthContext.tsx` | Who is logged in; login and logout |
+| `src/auth/ProtectedRoute.tsx` | Bounces logged-out users to `/login` |
+| `src/api/*.ts` | One Axios client per service, token already attached |
+| `src/layout/` | Nav bar and page chrome |
+| `src/components/ui/` | Button, Input, Card, Dialog (shadcn) |
+| `src/pages/` | Login, register, folders — Section 1 screens |
 
-**Recommendation: the second.** The person who knows an API is the right person
-to build its screens, and it stops this team becoming the bottleneck for four
-others. Needs a team decision — tracked in [DECISIONS.md](../DECISIONS.md).
+**Each other section builds its own screens.** If you own Storage Management,
+Research Evaluation or Updating, the UI for your data is yours. You know what
+your fields mean; Section 1 does not.
+
+### What the shell already does for you
+
+Do not rebuild any of this:
+
+- **Auth is handled.** If your screen renders at all, the user is logged in.
+  Get them with `const { user } = useAuth()`.
+- **The token is attached automatically.** Just call the API client. Never read
+  `localStorage` or set an `Authorization` header yourself.
+- **401s are handled.** An expired token clears itself and redirects to login.
+- **UI components exist.** Import from `@/components/ui/` instead of styling
+  raw buttons, so every screen looks like one product.
+
+### Adding your feature
+
+Everything of yours lives in one folder:
+
+```
+src/features/<your-section>/
+├── api.ts          calls to YOUR service
+├── types.ts        YOUR DTOs
+├── routes.tsx      exports your routes
+└── PaperPage.tsx   your screens
+```
+
+Export your routes from `routes.tsx` and the shell composes them in. **Do not
+edit `router.tsx` directly** — if four people edit one file, you get four merge
+conflicts. Export a route array and Section 1 wires it up once.
+
+Request and response shapes come from [CONTRACTS.md](../CONTRACTS.md), the
+source of truth. If your screen needs a field the API does not return, that is
+a CONTRACTS.md change plus a backend change — not something to work around in
+the component.
+
+### Conventions
+
+- **Always handle three states**: loading, error, and empty. A screen that
+  renders nothing while fetching looks broken.
+- **Show the message the server sent on error.** Every endpoint returns the
+  same `ApiError` shape and its `message` is written to be read by a human.
+- **Keep API calls in `api.ts`**, not inside components.
+- **No new Axios instances.** Use the shell client for the service you are
+  calling, or ask Section 1 to add one.
+
+### You will need to write some React
+
+Not a lot — a feature folder is mostly copying the patterns the shell
+establishes — but it is not zero. If that is a problem for your section, say so
+now rather than in week 6.

@@ -67,7 +67,7 @@ flowchart LR
 | Service | Stack | Owns | Folder |
 |---|---|---|---|
 | User Management | Spring Boot | `users`, `folders`; auth, JWT issuance | `user-management/` |
-| Frontend (owned by the User Management team) | React + Vite | The single React app in front of every service | `frontend/` |
+| Frontend | React + Vite | The single React app in front of every service. Section 1 owns the shell (routing, auth, API clients, design system); each section builds its own screens | `frontend/` |
 | Storage Management | Java + Spring Boot | `papers`, `notes`, `background_metadata`, `background_text`, `authors_background`; Postgres + S3/disk | `storage/` |
 | Research Evaluation | Python | Background-info aggregation, citation-neighbourhood metrics, LLM reasoning (claims + stance, week 7) | `backend/` |
 | Updating | Python (shares the `backend/` project with Research Evaluation) | `change_events`; the polling scheduler | `backend/` |

@@ -67,7 +67,7 @@ settled and anyone (including the TA) can see the reasoning. Newest first.
   connection is IPv6-only on the free plan and times out on IPv4 campus
   wifi. Free projects also pause after a week idle — resume before the demo.
 
-### Open — needs a team answer
+### Questions raised, and how they were settled
 
 - ~~**Folder layout mismatch.**~~ **Resolved 2026-09-18.** Backend and
   frontend are now separate top-level folders: `user-management/` holds the
@@ -82,18 +82,29 @@ settled and anyone (including the TA) can see the reasoning. Newest first.
   not installed, and screens need APIs to call), so there is nothing to gain
   from interleaving them.
 
-  Still open, and cheap to settle before the work starts: **who writes the
-  screens for the other four sections.** One React app serves all five
-  services. The proposal is that Section 1 owns the shell - routing, auth
-  context, API clients, layout, design system - and each section PRs its own
-  feature screens, since the person who knows an API is the right person to
-  render it. The alternative is Section 1 building every screen.
+- **Frontend ownership: Section 1 builds the shell; each section builds its
+  own screens.** Decided 2026-09-18.
 
-  Worth noting against the demo: DEMO.md steps 1-3 are all Swagger UI, and
-  the only frontend moment is step 4, a **paper detail page with a changes
-  panel**. That screen belongs to Storage Management and Updating data, not
-  User Management, and nobody is currently assigned to it. A login page
-  alone does not cover the demo.
+  Section 1 provides routing, auth context, the per-service API clients,
+  layout and the shadcn/Tailwind design system, plus its own login, register
+  and folder screens. Each other section builds the screens for its own data
+  in `frontend/src/features/<section>/`, following the conventions in
+  frontend/README.md.
+
+  Rationale: the person who knows an API is the right person to render it.
+  Building a screen needs domain knowledge but little React; building the
+  shell needs React but no domain knowledge. The alternative - Section 1
+  building every screen - makes one team the bottleneck for four others and
+  grows without bound as features are added.
+
+  Consequence to plan for: **the other four owners will need to write some
+  React.** Each feature folder is largely a matter of copying the patterns
+  the shell establishes, but it is not zero, and the Python owners should
+  know this is coming.
+
+  Still unassigned: DEMO.md step 4 needs a **paper detail page with a changes
+  panel**, which is Storage Management and Updating data. Under this decision
+  it belongs to those owners, not Section 1. Someone needs the ticket.
 ---
 
 ## 2026-09-18 — Research Evaluation + Updating scope and design
