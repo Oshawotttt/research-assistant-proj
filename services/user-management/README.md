@@ -10,7 +10,7 @@ Accounts, research folders, and JWT issuance. This service also owns the app's R
 
 | | |
 |---|---|
-| ✅ Done | Scaffold · springdoc · `application.yml` · Flyway `V1__init` · entities + repos · `SecurityConfig` + JWT issue/validate · `/auth/register` + `/auth/login` · `/folders` CRUD · error handling · OpenAPI · 3 passing JWT-contract tests. **Compiles and tests green.** |
+| ✅ Done | Backend complete: scaffold · Flyway `V1__init` · entities + repos · `SecurityConfig` (base64 JWT per CONTRACTS.md) · `/auth/register` + `/auth/login` · `/folders` CRUD · error handling · Swagger · **6 passing tests**. Merged with `main`. |
 | 🔜 Next | Fill in `application-local.yml`, then run — the first live Flyway migration against Supabase. Nothing else is blocked on it |
 | ⏸ Later | Frontend — **login page only** for now (§8). Needs Node installed; blocks nothing else |
 
@@ -68,6 +68,10 @@ spring:
     url: jdbc:postgresql://aws-N-<region>.pooler.supabase.com:5432/postgres
     username: postgres.<PROJECT-REF>
     password: <your database password>
+
+jwt:
+  # base64, NOT raw text. Generate: openssl rand -base64 32
+  secret: <base64 of 32+ random bytes>
 ```
 
 Then run with the `local` profile:
@@ -149,29 +153,50 @@ The table is `users`, not `user` — `user` is reserved in Postgres. `gen_random
 
 ---
 
-## 6. The JWT contract — read this if you own another section
+## 6. The JWT contract
 
-**Agree this before anyone writes validation code.** Changing it later means edits in three services.
+**[CONTRACTS.md](../../CONTRACTS.md) is the source of truth** for this and
+every other cross-service interface. Repeated here only as a pointer:
 
 | Item | Value |
 |---|---|
 | Header | `Authorization: Bearer <token>` |
-| Algorithm | HS256, symmetric |
-| `sub` | the user's **UUID** as a string — read it with `jwt.getSubject()` |
+| Algorithm | HS256 |
+| `sub` | the user **UUID** as a string — `jwt.getSubject()` |
 | Other claims | `iss: user-management`, `email`, `iat`, `exp` |
 | TTL | 2 hours |
-| Shared secret | env var `APP_JWT_SECRET`, **≥32 characters** — HS256 needs a 256-bit key or the app throws at startup |
+| Secret | env var `JWT_SECRET`, **base64 of 32+ random bytes** |
 
-To validate in your own Spring service, that's the whole job:
+### ⚠️ The secret is base64 — decode it
+
+`JWT_SECRET` is base64-encoded, and **every service base64-decodes it before
+building the key**:
+
+```java
+byte[] bytes = Base64.getDecoder().decode(secret.trim());   // NOT secret.getBytes()
+return new SecretKeySpec(bytes, "HmacSHA256");
+```
+
+Using the raw characters instead derives a completely different key from the
+same string, so tokens issued here would fail validation in the Python
+services — the Java/Python bug CONTRACTS.md warns about. `JwtSecretKeyTest`
+exists specifically to stop that regressing. Generate a secret with
+`openssl rand -base64 32`.
+
+To validate in another Spring service, that is the whole job:
 
 ```java
 @Bean JwtDecoder jwtDecoder(SecretKey k) { return NimbusJwtDecoder.withSecretKey(k).build(); }
 // + .oauth2ResourceServer(o -> o.jwt(Customizer.withDefaults())) in your SecurityFilterChain
 ```
 
-**The secret must never be committed.** Any service holding it can mint a valid token for any user. Local dev via `application-local.yml`; deployment via GitHub Actions secrets.
+**Never commit the secret.** Any service holding it can mint a valid token for
+any user. Local dev via `application-local.yml`; deployment via GitHub Actions
+secrets.
 
----
+Note that Updating mints **service tokens** with `sub=svc:updating` and
+`role=service`. This service never accepts them — it only issues user tokens —
+but Storage Management must handle a `sub` that is not a UUID.
 
 ## 7. API
 
@@ -254,6 +279,8 @@ A login page with no `/auth/login` to call can't be run or tested — you'd be w
 
 | Trap | Correct move |
 |---|---|
+| `JWT_SECRET` used as raw text | It is **base64** — decode it first, or Python services reject every token |
+| Property named `app.jwt.secret` | CONTRACTS.md says `JWT_SECRET`, so the property is `jwt.secret` |
 | Supabase **direct** connection string | IPv6-only on free; times out on IPv4 wifi. Use the session pooler, port 5432, user `postgres.<ref>` |
 | Transaction pooler (6543) | No prepared statements; fights Flyway. Session mode only |
 | Free project **pauses after 1 week idle** | Resume and re-verify the *day before* the demo |

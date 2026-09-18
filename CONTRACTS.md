@@ -19,6 +19,66 @@ This is the single source of truth for every interface between services.
   Storage Management must accept these on its internal endpoints without
   owner-scoping them to a real user.
 
+## User Management
+
+Owned by: User Management. Consumed by: the React frontend. Other services
+never call these - they only validate the JWT that `/auth/login` returns.
+
+Base URL in local dev: `http://localhost:8080`. Swagger UI at `/swagger-ui.html`.
+
+### `POST /auth/register` -> 201, `POST /auth/login` -> 200
+
+Public. Request `{"email": "a@example.com", "password": "at-least-8-chars"}`.
+Both return the same shape:
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiJ9...",
+  "expiresAt": "2026-09-18T20:00:00Z",
+  "user": {"id": "uuid", "email": "a@example.com", "createdAt": "2026-09-18T18:00:00Z"}
+}
+```
+
+`register` returns **409** if the email is taken. `login` returns **401** with
+an identical message for an unknown email and a wrong password, deliberately -
+so the endpoint cannot be used to enumerate which addresses are registered.
+Emails are normalised to lowercase before storage.
+
+### Token claims (what downstream services read)
+
+```json
+{"iss": "user-management", "sub": "<user uuid>", "email": "a@example.com", "iat": 0, "exp": 0}
+```
+
+`sub` is the user UUID as a string - read it with `jwt.getSubject()` (Java) or
+`payload["sub"]` (Python). HS256, 2-hour TTL. The signing key is
+`base64decode(JWT_SECRET)`, exactly as the Auth section above requires.
+
+### `/folders` - all require `Authorization: Bearer <token>`
+
+| Method | Path | Returns |
+|---|---|---|
+| `GET` | `/folders` | `200` `[{"id", "name", "createdAt"}]`, caller-owned only |
+| `POST` | `/folders` | `201` `{"id", "name", "createdAt"}` |
+| `PUT` | `/folders/{id}` | `200` same shape |
+| `DELETE` | `/folders/{id}` | `204` |
+
+Request body for POST/PUT is `{"name": "..."}`. There is **no `ownerId` field**:
+the owner always comes from the verified token, never the request body.
+
+A folder belonging to another user returns **404, not 403** - a 403 would
+confirm the id exists. Duplicate folder name for the same user returns **409**
+(names are unique per owner, case-insensitively).
+
+### Error shape (every endpoint)
+
+```json
+{"status": 400, "message": "human readable", "fieldErrors": {"email": "must be a well-formed email address"}, "timestamp": "..."}
+```
+
+`fieldErrors` is present only on validation failures. The frontend renders
+`message` directly, so it is always human-readable.
+
 ## Storage Management ↔ Research Evaluation / Updating
 
 Owned by: Storage Management. Consumed by: Research Evaluation (reads
