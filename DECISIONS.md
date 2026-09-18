@@ -79,6 +79,16 @@ settled and anyone (including the TA) can see the reasoning. Newest first.
   connection is IPv6-only on the free plan and times out on IPv4 campus
   wifi. Free projects also pause after a week idle — resume before the demo.
 
+### Known gap: no controller tests
+
+Recorded 2026-09-19 during a cleanup audit. User Management has two
+controllers and no tests covering them. The security rules it relies on —
+404-not-403 for another user's folder, an identical 401 for unknown email
+and wrong password, owner taken from the token rather than the request
+body — are currently proven only by a manual run, so a refactor could
+break any of them silently while the 6 existing tests still pass. Tracked
+in `user-management/OPEN-ITEMS.md`.
+
 ### Questions raised, and how they were settled
 
 - ~~**Folder layout mismatch.**~~ **Resolved 2026-09-18.** Backend and

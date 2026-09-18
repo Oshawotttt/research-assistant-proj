@@ -36,7 +36,3 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
     operations-sorter: method
-
-logging:
-  level:
-    org.flywaydb: INFO

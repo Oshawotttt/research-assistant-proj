@@ -10,9 +10,9 @@ Accounts, research folders, and JWT issuance. Spring Boot only — the React app
 
 | | |
 |---|---|
-| ✅ Done | Backend complete: scaffold · Flyway `V1__init` · entities + repos · `SecurityConfig` (base64 JWT per CONTRACTS.md) · `/auth/register` + `/auth/login` · `/folders` CRUD · error handling · Swagger · **6 passing tests**. Merged with `main`. |
-| 🔜 Next | Fill in `application-local.yml`, then run — the first live Flyway migration against Supabase. Nothing else is blocked on it |
-| ⏸ Later | Frontend — **login page only** for now (§8). Needs Node installed; blocks nothing else |
+| ✅ Done | Backend complete **and verified running against Supabase**. Flyway applied `V1__init`; register, login, folder CRUD, cross-user isolation and validation all exercised live. 6 passing tests. Merged with `main` and pushed. |
+| 🔜 Next | **Controller tests** — the security rules in §7 are currently proven only by hand. See [OPEN-ITEMS.md](OPEN-ITEMS.md) |
+| ⏸ Later | Frontend — **parked** until the backends are settled. Scope is the login page only; ownership is settled (this team owns the shell). See [`../frontend/`](../frontend/) |
 
 Branch: `feat/user-management`.
 
@@ -27,7 +27,7 @@ Only **JDK 25+** is required for the backend. Everything else is deliberately av
 | Not needed | Why |
 |---|---|
 | Maven | `mvnw` / `mvnw.cmd` download it themselves. **Never run a bare `mvn`.** |
-| Docker / WSL | No local database — we use Supabase |
+| Docker / WSL | Not for local development — the database is Supabase. Deployment still needs Docker, with a **Java 25+** base image (§3) |
 | Postgres / psql | Same; use the Supabase dashboard's SQL editor |
 | Node | Frontend only (§8), not the backend |
 
@@ -232,11 +232,14 @@ Likewise `/auth/login` returns the **same generic 401** for an unknown email and
 
 ## 8. Frontend — moved
 
-The React app is a **separate deliverable in [`../frontend/`](../frontend/)**,
-with its own README, build tooling and Dockerfile. This team owns it, but it is
-not part of the Spring Boot build and nothing here depends on it.
+The React app is a **separate deliverable in [`../frontend/`](../frontend/)**.
+This team owns it, but it is not part of the Spring Boot build and nothing here
+depends on it.
 
-Scope there for now is the **login page only**. See
+It is **not scaffolded yet** — that folder currently holds only a README. Work
+there is parked until the backends are settled, and the scope when it resumes is
+the **login page only**. Ownership is settled: this team builds the shell,
+each section builds its own screens. See
 [`../frontend/README.md`](../frontend/README.md).
 
 ## 9. Verification
@@ -270,21 +273,27 @@ Scope there for now is the **login page only**. See
 | Lombok on JDK 26 | Unverified; skip it |
 | Table named `user` | Reserved in Postgres; use `users` |
 | 403 on someone else's folder | Leaks that the id exists; return 404 |
-| `tailwindcss init -p` | Removed in v4 |
-| `z.string().email()` | Deprecated in Zod 4 — use `z.email()` |
+
+Frontend traps live in [`../frontend/README.md`](../frontend/README.md), not here.
 
 ---
 
-## 11. PR breakdown
+## 11. How this was built
 
-Seven PRs onto `feat/user-management`, each independently reviewable:
+On `feat/user-management`, in this order:
 
-1. Scaffold + datasource config + Flyway `V1__init`
-2. Entities, repositories, `application.yml`
-3. `SecurityConfig` + `TokenService` — **JWT issuance/validation**
-4. `/auth/register` + `/auth/login` + error handler
-5. `/folders` CRUD with ownership enforcement
-6. OpenAPI config + controller tests
-7. Frontend: scaffold, auth context, login/register, folders page
+| Commit | What landed |
+|---|---|
+| `94445fd` | The whole backend — scaffold, `V1__init`, entities, `SecurityConfig`, `/auth`, `/folders`, error handling, Swagger, tests |
+| `015ffb3` | Merge of `main` (the team's docs and Python scaffolding) |
+| `d535789` | User Management interfaces added to CONTRACTS.md; doc-maintenance rule |
+| `3e92eb2` | Split into `user-management/` and `frontend/` |
+| `e2462e9`–`caa3e85` | Frontend parked; ownership settled |
+| `fa74292` | Java 25 target + the JRE image constraint |
 
-**PR 3 unblocks Sections 2 and 3.** Land it early and tell those owners the moment the claim contract is merged.
+An earlier plan split this into seven PRs. It did not happen that way — the
+backend landed in one commit. Worth knowing if your team grades PR practice:
+the history is honest but coarse.
+
+**Sections 2 and 3 are unblocked** — the claim contract is merged and the
+service runs. They need the `JWT_SECRET` value from you.
