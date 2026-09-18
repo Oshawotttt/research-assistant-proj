@@ -7,9 +7,11 @@ and change events will live here too.
 
 Backend for this service: [`../user-management/`](../user-management/).
 
-## Status
+## Status — parked
 
-**Not scaffolded yet.** Needs Node installed first:
+**Deferred until the backends are settled** (DECISIONS.md, 2026-09-18).
+Nothing here is started, and nothing else is blocked on it.
+
 
 ```powershell
 winget install -e --id OpenJS.NodeJS.LTS

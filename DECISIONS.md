@@ -77,11 +77,23 @@ settled and anyone (including the TA) can see the reasoning. Newest first.
   different build tools, different CI steps and different Dockerfiles. The
   backend could not go in `backend/` either: that is the Python project for
   Research Evaluation and Updating. ARCHITECTURE.md and README.md updated.
-- **Who builds the other sections' screens.** One React app serves all five
-  services. Section 1 owning the shell (routing, auth context, API clients,
-  design system) with each section adding its own screens is the proposal;
-  Section 1 building every screen is the alternative. Unresolved.
+- **Frontend is deferred until the backends are settled.** Decided
+  2026-09-18. Backend work is unblocked and frontend work is not (Node is
+  not installed, and screens need APIs to call), so there is nothing to gain
+  from interleaving them.
 
+  Still open, and cheap to settle before the work starts: **who writes the
+  screens for the other four sections.** One React app serves all five
+  services. The proposal is that Section 1 owns the shell - routing, auth
+  context, API clients, layout, design system - and each section PRs its own
+  feature screens, since the person who knows an API is the right person to
+  render it. The alternative is Section 1 building every screen.
+
+  Worth noting against the demo: DEMO.md steps 1-3 are all Swagger UI, and
+  the only frontend moment is step 4, a **paper detail page with a changes
+  panel**. That screen belongs to Storage Management and Updating data, not
+  User Management, and nobody is currently assigned to it. A login page
+  alone does not cover the demo.
 ---
 
 ## 2026-09-18 — Research Evaluation + Updating scope and design
