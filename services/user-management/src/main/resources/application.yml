@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: user-management
+
+  # NOTE: datasource url/username/password are deliberately NOT set here.
+  # They are secrets and live in application-local.yml (gitignored), or come
+  # from env vars in deployment. Starting without them fails fast, which is
+  # the intended behaviour.
+
+  jpa:
+    hibernate:
+      ddl-auto: validate      # Flyway owns the schema; JPA only checks it matches
+    properties:
+      hibernate:
+        default_schema: usermgmt
+    open-in-view: false       # avoids holding a DB connection for the whole request
+
+  flyway:
+    enabled: true
+    schemas: usermgmt
+    default-schema: usermgmt
+    create-schemas: true      # creates `usermgmt` on a fresh Supabase project
+
+# Property names match CONTRACTS.md so the JWT_SECRET env var binds directly.
+# jwt.secret is deliberately absent here - it lives in application-local.yml
+# locally, and comes from the JWT_SECRET env var when deployed.
+jwt:
+  issuer: user-management
+  ttl: PT2H
+
+app:
+  cors:
+    allowed-origins: http://localhost:5173
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+
+logging:
+  level:
+    org.flywaydb: INFO

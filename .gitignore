@@ -5,10 +5,15 @@ node_modules/
 dist/
 build/
 .next/
+target/
 
 # env & secrets
 .env
 .env.local
+# Spring local config - holds DB password + JWT secret. Never commit.
+application-local.yml
+application-local.yaml
+application-local.properties
 
 # data
 data/
