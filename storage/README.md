@@ -15,9 +15,12 @@ frontend reads papers, notes and background info from it.
 ## Stack
 
 Java 25, Spring Boot 4.1.1, Maven, Postgres via Flyway + Spring Data JPA,
-springdoc-openapi for Swagger UI. Runs on port **8080**, as
-`storage-management` on the Compose network — `backend/.env.example` already
-points at `http://storage-management:8080`.
+springdoc-openapi for Swagger UI.
+
+Ports: the container listens on **8080** as `storage-management` on the Compose
+network, which is what `backend/.env.example` already points at. A local
+non-Docker run uses **8081** instead, set by `SERVER_PORT` in `.env` — User
+Management also defaults to 8080 and only one service can hold it on the host.
 
 ## Prerequisites
 
@@ -68,7 +71,7 @@ with "jdbc"`; that almost always means `.env` is missing or wasn't picked up.
 .\mvnw.cmd spring-boot:run
 ```
 
-Swagger UI: <http://localhost:8080/docs>
+Swagger UI: <http://localhost:8081/docs>
 
 ```powershell
 .\mvnw.cmd test              # needs Postgres running
@@ -79,8 +82,14 @@ Docker, standalone:
 
 ```
 docker build -t storage-management .
-docker run --rm -p 8080:8080 --env-file .env -v storage_files:/app/files storage-management
+docker run --rm --env-file .env -e SERVER_PORT=8080 -p 8081:8080 -v storage_files:/app/files storage-management
 ```
+
+The explicit `-e SERVER_PORT=8080` matters: `.env` carries the local-dev
+override, and `--env-file` would otherwise make the container listen on 8081
+while `SM_BASE_URL` still points other services at 8080. Anything that feeds
+this `.env` to a container — including the Compose stack — needs the same
+override.
 
 ## State
 
