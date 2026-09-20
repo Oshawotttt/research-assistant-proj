@@ -31,7 +31,10 @@ spring:
       max-request-size: 50MB
 
 server:
-  port: 8080
+  # 8080 inside the container, which is what SM_BASE_URL points at. A local
+  # non-Docker run overrides this via SERVER_PORT, because User Management
+  # also defaults to 8080 and only one of us can hold it on the host.
+  port: ${SERVER_PORT:8080}
 
 springdoc:
   swagger-ui:
