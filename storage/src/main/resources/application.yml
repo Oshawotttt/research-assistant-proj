@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: storage-management
+
+  # Lets a local .env supply the vars below without exporting them by hand.
+  # In Docker the same names arrive as real env vars and this import is a no-op.
+  config:
+    import: optional:file:./.env[.properties]
+
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USER}
+    password: ${DATABASE_PASSWORD}
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Flyway owns the schema; Hibernate only checks the entities match it.
+      ddl-auto: validate
+    properties:
+      hibernate.default_schema: storage
+
+  flyway:
+    schemas: storage
+    default-schema: storage
+    create-schemas: true
+
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+server:
+  # 8080 inside the container, which is what SM_BASE_URL points at. A local
+  # non-Docker run overrides this via SERVER_PORT, because User Management
+  # also defaults to 8080 and only one of us can hold it on the host.
+  port: ${SERVER_PORT:8080}
+
+springdoc:
+  swagger-ui:
+    path: /docs
+
+storage:
+  jwt-secret: ${JWT_SECRET}
+  research-evaluation-base-url: ${RE_BASE_URL}
+  grobid-url: ${GROBID_URL}
+  file-storage-path: ${FILE_STORAGE_PATH}
