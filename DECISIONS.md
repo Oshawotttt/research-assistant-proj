@@ -5,6 +5,130 @@ settled and anyone (including the TA) can see the reasoning. Newest first.
 
 ---
 
+## 2026-09-18 — User Management (Section 1) build
+
+### Forced by the toolchain, not chosen
+
+- **Spring Boot 4.1.1 / Spring Security 7.** Spring Initializr no longer
+  offers the Boot 3.x line at all, so this was not a choice. It matters
+  because essentially every JWT tutorial online targets Security 6 and
+  will not compile. Boot 4 also renamed the starters: `-web` became
+  `-webmvc`, `-oauth2-resource-server` became
+  `-security-oauth2-resource-server`, Flyway got its own starter, and the
+  single `spring-boot-starter-test` split into per-slice test starters.
+  Copying a Boot 3 pom will fail to resolve.
+- **springdoc 3.1.1**, not the 2.x line, which is Boot 3 only.
+
+### Decisions
+
+- **JWT via the Spring Security resource server, not a custom
+  `OncePerRequestFilter`.** Security 7 added
+  `NimbusJwtEncoder/Decoder.withSecretKey(key)`, which defaults to HS256,
+  so issuing and validating are one line each. Other services need only
+  the key bean, the decoder bean and one `oauth2ResourceServer` line.
+- **`JWT_SECRET` is base64-decoded before use**, per CONTRACTS.md. The
+  first implementation used raw `getBytes(UTF_8)` and was corrected
+  before merge — raw bytes here would have derived a different key from
+  the same string than the Python services do, and every token this
+  service issued would have failed their signature check. This is the
+  exact Java/Python bug CONTRACTS.md warns about; there are now three
+  unit tests specifically to stop it regressing.
+- **UUID primary keys, not `bigserial`.** `users.id` crosses a service
+  boundary into Storage Management, so it needs to be globally unique and
+  non-enumerable. It also keeps the JWT `sub` from leaking the user count.
+- **Its own `usermgmt` Postgres schema, not `public`.** Two config lines,
+  and it makes the "bare references, not enforced FKs" rule physical:
+  Storage Management in its own schema cannot accidentally FK into
+  `usermgmt.users`. One Supabase project can still host every service.
+- **Flyway owns the schema, with `ddl-auto: validate`.** The schema is a
+  contract other services read, so it is a reviewed file in git rather
+  than a side effect of entity annotations. `validate` fails fast on
+  entity drift instead of silently altering a table.
+- **`folders.owner_id` is a plain `UUID` field, not a `@ManyToOne User`.**
+  The database still enforces the FK; JPA stays trivial and folder
+  queries carry no lazy-loading or N+1 risk.
+- **Another user's folder returns 404, not 403.** A 403 confirms the id
+  exists. `/auth/login` likewise returns an identical 401 for an unknown
+  email and a wrong password, so it cannot enumerate registered addresses.
+- **No Lombok.** It patches `javac` internals and historically breaks on
+  brand-new JDKs; the dev machine runs JDK 26, GA in July 2026, whose
+  Lombok support is unverified. With two entities the cost of hand-written
+  accessors is near zero, and every DTO is a `record`.
+- **`<java.version>25</java.version>`**, the current LTS release. Compiles
+  under the locally installed JDK 26 toolchain via `--release`. The code
+  itself needs nothing newer than Java 17 - this is a support-horizon
+  choice, not a capability one.
+
+  **Deployment constraint:** the Docker image for this service must use a
+  Java 25+ JRE (`eclipse-temurin:25-jre`). Bytecode compiled for 25 will
+  not run on an older JRE, and it fails only inside the container - never
+  on a dev machine with a newer JDK installed, which is how this kind of
+  bug survives until deployment week.
+
+  **Other services are unaffected.** Each service is a separate project
+  with its own build file, and services talk over HTTP/JSON rather than by
+  sharing code - two of them are Python. Storage Management may target any
+  Java version it likes.
+- **Token lives in `localStorage`** on the frontend, not an httpOnly
+  cookie. A cookie set by User Management would not be sent to Storage
+  Management on a different origin without a shared parent domain, which
+  fights the multi-service design.
+- **Dev database is Supabase, one free project per developer**, rather
+  than local Postgres in Docker. Removes Docker and WSL from Section 1's
+  critical path entirely. Use the **session pooler** string: the direct
+  connection is IPv6-only on the free plan and times out on IPv4 campus
+  wifi. Free projects also pause after a week idle — resume before the demo.
+
+### Known gap: no controller tests
+
+Recorded 2026-09-19 during a cleanup audit. User Management has two
+controllers and no tests covering them. The security rules it relies on —
+404-not-403 for another user's folder, an identical 401 for unknown email
+and wrong password, owner taken from the token rather than the request
+body — are currently proven only by a manual run, so a refactor could
+break any of them silently while the 6 existing tests still pass. Tracked
+in `user-management/OPEN-ITEMS.md`.
+
+### Questions raised, and how they were settled
+
+- ~~**Folder layout mismatch.**~~ **Resolved 2026-09-18.** Backend and
+  frontend are now separate top-level folders: `user-management/` holds the
+  Spring Boot service, `frontend/` holds the React app. The earlier plan to
+  put the whole service in `frontend/` was dropped - a Spring Boot API in a
+  path called `frontend/` misleads every new reader, and the two halves have
+  different build tools, different CI steps and different Dockerfiles. The
+  backend could not go in `backend/` either: that is the Python project for
+  Research Evaluation and Updating. ARCHITECTURE.md and README.md updated.
+- **Frontend is deferred until the backends are settled.** Decided
+  2026-09-18. Backend work is unblocked and frontend work is not (Node is
+  not installed, and screens need APIs to call), so there is nothing to gain
+  from interleaving them.
+
+- **Frontend ownership: Section 1 builds the shell; each section builds its
+  own screens.** Decided 2026-09-18.
+
+  Section 1 provides routing, auth context, the per-service API clients,
+  layout and the shadcn/Tailwind design system, plus its own login, register
+  and folder screens. Each other section builds the screens for its own data
+  in `frontend/src/features/<section>/`, following the conventions in
+  frontend/README.md.
+
+  Rationale: the person who knows an API is the right person to render it.
+  Building a screen needs domain knowledge but little React; building the
+  shell needs React but no domain knowledge. The alternative - Section 1
+  building every screen - makes one team the bottleneck for four others and
+  grows without bound as features are added.
+
+  Consequence to plan for: **the other four owners will need to write some
+  React.** Each feature folder is largely a matter of copying the patterns
+  the shell establishes, but it is not zero, and the Python owners should
+  know this is coming.
+
+  Still unassigned: DEMO.md step 4 needs a **paper detail page with a changes
+  panel**, which is Storage Management and Updating data. Under this decision
+  it belongs to those owners, not Section 1. Someone needs the ticket.
+---
+
 ## 2026-09-18 — Research Evaluation + Updating scope and design
 
 ### Team decisions (via Q&A)
